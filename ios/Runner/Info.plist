@@ -8,6 +8,9 @@
 <string>نحتاج إلى الوصول إلى الصور لاختيار صورة</string>
 <key>NSMicrophoneUsageDescription</key>
 <string>تطبيق يحتاج لاستخدام الميكروفون لتسجيل الرسائل الصوتية</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>We need microphone access to record voice messages</string>
+
 
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>

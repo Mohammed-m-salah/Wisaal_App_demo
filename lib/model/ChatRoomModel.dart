@@ -43,9 +43,9 @@ class ChatRoomModel {
           .map((e) => ChatModel.fromJson(e))
           .toList(),
       unReadMessageNO: json['unReadMessageNO'] ?? 0,
-      lastMessage: json['lastMessage'] ?? '',
-      lastMessageTimeStamp: json['lastMessageTimeStamp'] != null
-          ? DateTime.tryParse(json['lastMessageTimeStamp'])
+      lastMessage: json['last_message'] ?? '',
+      lastMessageTimeStamp: json['last_message_time_stamp'] != null
+          ? DateTime.tryParse(json['last_message_time_stamp'])
           : null,
       timeStamp: json['timeStamp'] ?? '',
     );
@@ -59,9 +59,9 @@ class ChatRoomModel {
       'sender': sender?.toJson(),
       'receiver': receiver?.toJson(),
       'messages': messages?.map((e) => e.toJson()).toList(),
-      'unReadMessageNO': unReadMessageNO,
-      'lastMessage': lastMessage,
-      'lastMessageTimeStamp': lastMessageTimeStamp?.toIso8601String(),
+      'un_read_message_no': unReadMessageNO,
+      'last_message': lastMessage,
+      'last_message_time_stamp': lastMessageTimeStamp?.toIso8601String(),
       'timeStamp': timeStamp,
     };
   }

@@ -13,7 +13,7 @@ class SplashPage extends StatelessWidget {
     Get.put(SplashController());
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

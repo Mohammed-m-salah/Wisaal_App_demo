@@ -15,7 +15,6 @@ class ChatListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ContactController contactController = Get.put(ContactController());
-
     return RefreshIndicator(
       onRefresh: () => contactController.getChatRoomList(),
       child: Obx(() {
@@ -24,39 +23,37 @@ class ChatListPage extends StatelessWidget {
         }
 
         if (contactController.chatRoomList.isEmpty) {
-          return const Center(child: Text('لا توجد محادثات حالياً'));
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(), // مهم
+            children: const [
+              Center(
+                  child: Padding(
+                padding: EdgeInsets.only(top: 150),
+                child: Text('لا توجد محادثات حالياً'),
+              )),
+            ],
+          );
         }
 
-        return ListView(
-          children: contactController.chatRoomList
-              .where((e) => e.receiver != null)
-              .map((e) {
+        return ListView.builder(
+          itemCount: contactController.chatRoomList.length,
+          itemBuilder: (context, index) {
+            final e = contactController.chatRoomList[index];
+            if (e.receiver == null) return const SizedBox();
+
             return InkWell(
               onTap: () {
                 Get.to(ChatPage(userModel: e.receiver!));
               },
               child: ChatTile(
                 imgUrl: e.receiver!.profileimage ??
-                    'https://www.shutterstock.com/image-photo/portrait-young-african-black-boy-600nw-509908462.jpg',
+                    'https://i.ibb.co/V04vrTtV/blank-profile-picture-973460-1280.png',
                 name: e.receiver!.name ?? 'user name',
                 lastChat: e.lastMessage ?? 'لا توجد رسالة',
                 lastTime: formatTimestamp(e.lastMessageTimeStamp),
               ),
             );
-
-            // return InkWell(
-            //   onTap: () {
-            //     Get.to(ChatPage(userModel: e.receiver!));
-            //   },
-            //   child: ChatTile(
-            //     imgUrl: e.receiver!.profileimage ??
-            //         'https://www.shutterstock.com/image-photo/portrait-young-african-black-boy-600nw-509908462.jpg',
-            //     name: e.receiver!.name ?? 'user name',
-            //     lastChat: e.lastMessage ?? 'لا توجد رسالة',
-            //     lastTime: formatTimestamp(e.lastMessageTimeStamp),
-            //   ),
-            // );
-          }).toList(),
+          },
         );
       }),
     );

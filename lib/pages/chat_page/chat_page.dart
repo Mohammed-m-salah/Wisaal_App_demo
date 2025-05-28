@@ -27,16 +27,19 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
 
-  // حذف isTyping من هنا لأنه صار داخل ChatController كـ RxBool
-
   @override
   void initState() {
     super.initState();
+
     chatcontroller = Get.put(ChatController());
     profileController = Get.put(ProfileController());
     imagePickerController = Get.put(ImagePickerController());
 
-    // استمع على التغيير في النص وغير قيمة isTyping في ChatController مباشرة
+    // تعيين ID غرفة الدردشة بناءً على المستخدم المحدد
+    chatcontroller.currentChatRoomId.value =
+        chatcontroller.getRoomId(widget.userModel.id!);
+
+    // تحديث حالة الكتابة عند تغير النص في حقل الرسالة
     messageController.addListener(() {
       chatcontroller.isTyping.value = messageController.text.trim().isNotEmpty;
     });
@@ -47,6 +50,17 @@ class _ChatPageState extends State<ChatPage> {
     messageController.dispose();
     scrollController.dispose();
     super.dispose();
+  }
+
+  // دالة للتمرير إلى أحدث رسالة مع التأكد من وجود عملاء ScrollController
+  void scrollToBottom() {
+    if (scrollController.hasClients) {
+      scrollController.animateTo(
+        scrollController.position.minScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -115,7 +129,6 @@ class _ChatPageState extends State<ChatPage> {
       ),
       body: Column(
         children: [
-          // الرسائل
           Expanded(
             child: Stack(
               children: [
@@ -135,12 +148,9 @@ class _ChatPageState extends State<ChatPage> {
 
                     final messages = snapshot.data!.reversed.toList();
 
-                    // تحريك السكروول لأحدث رسالة بشكل آمن بعد البناء
+                    // قم بالتمرير بعد بناء الواجهة
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (scrollController.hasClients) {
-                        scrollController
-                            .jumpTo(scrollController.position.minScrollExtent);
-                      }
+                      scrollToBottom();
                     });
 
                     return ListView.builder(
@@ -150,13 +160,15 @@ class _ChatPageState extends State<ChatPage> {
                       itemBuilder: (context, index) {
                         final message = messages[index];
                         return ChatBubbel(
+                          audioUrl: message.audioUrl ?? "",
                           message: message.message ?? '',
                           isComming: message.senderId ==
                               profileController.currentUser.value.id,
                           iscolor: Colors.amber,
                           time: message.timeStamp != null
-                              ? DateFormat('hh:mm a')
-                                  .format(DateTime.parse(message.timeStamp!))
+                              ? DateFormat('hh:mm a').format(
+                                  DateTime.parse(message.timeStamp!),
+                                )
                               : '',
                           status: "Read",
                           imgUrl: message.imageUrl ?? "",
@@ -166,13 +178,16 @@ class _ChatPageState extends State<ChatPage> {
                                   Get.defaultDialog(
                                     title: "حذف الرسالة",
                                     middleText:
-                                        "هل أنت متأكد أنك تريد حذف هذه الرسالة؟",
+                                        "هل أنت متأكد من حذف هذه الرسالة؟",
                                     textCancel: "إلغاء",
-                                    textConfirm: "نعم",
+                                    textConfirm: "حذف",
                                     confirmTextColor: Colors.white,
-                                    onConfirm: () {
-                                      chatcontroller.deleteMessage(message.id!);
-                                      Get.back();
+                                    onConfirm: () async {
+                                      await chatcontroller.deleteMessage(
+                                        message.id!,
+                                        chatcontroller.currentChatRoomId.value,
+                                      );
+                                      Get.back(); // إغلاق النافذة
                                     },
                                   );
                                 }
@@ -182,23 +197,20 @@ class _ChatPageState extends State<ChatPage> {
                     );
                   },
                 ),
+
+                // عرض الصورة المختارة قبل الإرسال
                 Obx(
                   () => (chatcontroller.selectedImagePath.value != "")
                       ? Positioned(
-                          bottom: 60, // ارفع قليلاً حتى لا يغطي حقل الإدخال
-                          left: 0,
-                          right: 0,
+                          bottom: 70,
+                          left: 10,
+                          right: 10,
                           child: Container(
-                            width: 100,
-                            height: 300,
-                            margin: const EdgeInsets.only(bottom: 10),
+                            constraints: BoxConstraints(
+                              maxHeight:
+                                  MediaQuery.of(context).size.height * 0.4,
+                            ),
                             decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: FileImage(
-                                  File(chatcontroller.selectedImagePath.value),
-                                ),
-                                fit: BoxFit.contain,
-                              ),
                               color: Theme.of(context)
                                   .colorScheme
                                   .primaryContainer,
@@ -206,16 +218,32 @@ class _ChatPageState extends State<ChatPage> {
                                 topLeft: Radius.circular(20),
                                 topRight: Radius.circular(20),
                               ),
+                              image: DecorationImage(
+                                image: FileImage(
+                                  File(chatcontroller.selectedImagePath.value),
+                                ),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            child: Align(
+                              alignment: Alignment.topRight,
+                              child: IconButton(
+                                icon:
+                                    const Icon(Icons.close, color: Colors.red),
+                                onPressed: () {
+                                  chatcontroller.selectedImagePath.value = "";
+                                },
+                              ),
                             ),
                           ),
                         )
-                      : Container(),
+                      : const SizedBox.shrink(),
                 ),
               ],
             ),
           ),
 
-          // حقل الإدخال
+          // حقل الإدخال والزر
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
@@ -229,30 +257,46 @@ class _ChatPageState extends State<ChatPage> {
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
                 ),
-
-                // الطرف الأيسر (prefix)
                 prefixIcon: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Obx(() => chatcontroller.isTyping.value
-                      ? IconButton(
-                          onPressed: () {
-                            // TODO: افتح الإيموجي بيكر هنا لو حبيت
-                          },
-                          icon: const Icon(Icons.emoji_emotions_outlined,
-                              color: Colors.white),
-                        )
-                      : SvgPicture.asset(
-                          'assets/icons/eva_mic-fill.svg',
-                          height: 25,
-                          width: 25,
-                        )),
+                  child: Obx(
+                    () => chatcontroller.isTyping.value
+                        ? IconButton(
+                            onPressed: () {
+                              // يمكن هنا فتح Emoji Picker
+                            },
+                            icon: const Icon(Icons.emoji_emotions_outlined,
+                                color: Colors.white),
+                          )
+                        : InkWell(
+                            onLongPress: () async {
+                              if (!chatcontroller.isRecording.value) {
+                                await chatcontroller.start_record();
+                              }
+                            },
+                            onTap: () async {
+                              if (chatcontroller.isRecording.value) {
+                                await chatcontroller.stop_record();
+                                await chatcontroller.sendMessage(
+                                  widget.userModel.id!,
+                                  '',
+                                  widget.userModel,
+                                  isVoice: true,
+                                );
+                              }
+                            },
+                            child: Obx(() => Icon(
+                                  chatcontroller.isRecording.value
+                                      ? Icons.stop
+                                      : Icons.mic,
+                                  color: Colors.white,
+                                )),
+                          ),
+                  ),
                 ),
-
-                // الطرف الأيمن (suffix)
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // زر الصورة
                     Obx(
                       () => chatcontroller.selectedImagePath.value == ""
                           ? IconButton(
@@ -313,24 +357,21 @@ class _ChatPageState extends State<ChatPage> {
                                   const Icon(Icons.close, color: Colors.amber),
                             ),
                     ),
-
-                    // زر الإرسال
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: InkWell(
                         onTap: () {
-                          if (messageController.text.isNotEmpty ||
+                          if (messageController.text.trim().isNotEmpty ||
                               chatcontroller
                                   .selectedImagePath.value.isNotEmpty) {
                             chatcontroller.sendMessage(
                               widget.userModel.id!,
-                              messageController.text,
+                              messageController.text.trim(),
                               widget.userModel,
                             );
                             messageController.clear();
                             chatcontroller.isTyping.value = false;
-                            // chatcontroller.updateTypingStatus(
-                            //     widget.userModel.id!, false); // 👈 مهم
+                            chatcontroller.selectedImagePath.value = "";
                           } else {
                             Get.snackbar(
                               'تنبيه',

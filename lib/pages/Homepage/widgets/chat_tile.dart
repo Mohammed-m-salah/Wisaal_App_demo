@@ -58,6 +58,7 @@ class ChatTile extends StatelessWidget {
           subtitle: Text(
             lastChat,
             style: TextStyle(
+              overflow: TextOverflow.ellipsis,
               color: Colors.grey[600],
               fontSize: 14,
             ),

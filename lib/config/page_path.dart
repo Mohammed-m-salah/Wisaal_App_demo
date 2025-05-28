@@ -9,11 +9,16 @@ import 'package:wissal_app/pages/contact_page/contact_page.dart';
 import 'package:wissal_app/pages/profile_page.dart/profile_page.dart';
 import 'package:wissal_app/pages/user_profile/profile_page.dart';
 import 'package:wissal_app/pages/user_profile/update_user_profile.dart';
+import 'package:wissal_app/pages/welcom_page/welcom_page.dart';
 
 var pagePath = [
   GetPage(
       name: "/authpage",
       page: () => AuthPage(),
+      transition: Transition.leftToRight),
+  GetPage(
+      name: "/welcome",
+      page: () => WelcomPage(),
       transition: Transition.leftToRight),
   GetPage(
       name: "/homepage",

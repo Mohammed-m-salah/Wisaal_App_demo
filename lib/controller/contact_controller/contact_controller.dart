@@ -54,8 +54,9 @@ class ContactController extends GetxController {
 
       for (final room in roomData) {
         final chatRoom = ChatRoomModel.fromJson(room);
+        print('================== 🧪🧪🧪🧪🧪🧪===================');
         print(
-            "🧪 lastMessage: ${chatRoom.lastMessage}, lastTime: ${chatRoom.lastMessageTimeStamp}");
+            "🧪 last_message: ${chatRoom.lastMessage}, lastTime: ${chatRoom.lastMessageTimeStamp}");
 
         final otherUserId = chatRoom.senderId == userId
             ? chatRoom.reciverId

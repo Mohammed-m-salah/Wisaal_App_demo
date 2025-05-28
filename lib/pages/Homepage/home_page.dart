@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:wissal_app/controller/contact_controller/contact_controller.dart';
-import 'package:wissal_app/controller/image_picker/image_picker.dart';
+import 'package:wissal_app/controller/chat_controller/chat_controller.dart';
 import 'package:wissal_app/pages/Homepage/widgets/call_list_page.dart';
 import 'package:wissal_app/pages/Homepage/widgets/chat_list_page.dart';
 import 'package:wissal_app/pages/Homepage/widgets/groups_list_page.dart';
+import 'package:wissal_app/helpers/notification_helper.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final ChatController chatController = Get.put(ChatController());
+
+  @override
+  void initState() {
+    super.initState();
+    chatController.listenToIncomingMessages();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    ImagePickerController imagepickercontroller =
-        Get.put(ImagePickerController());
-    ContactController contactcontroller = Get.put(ContactController());
+    // باقي الكود بدون تغيير
     return DefaultTabController(
-      length: 3, // عدد التبويبات
+      length: 3,
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -51,7 +61,7 @@ class HomePage extends StatelessWidget {
           actions: [
             IconButton(
               onPressed: () {
-                contactcontroller.getChatRoomList();
+                // contactcontroller.getChatRoomList();
               },
               icon: const Icon(Icons.search, color: Colors.white),
             ),

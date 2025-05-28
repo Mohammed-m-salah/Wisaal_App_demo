@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:get/get.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wissal_app/controller/profile_controller/profile_controller.dart';
@@ -6,9 +10,12 @@ import 'package:wissal_app/model/chat_model.dart';
 import 'package:wissal_app/model/user_model.dart';
 import 'package:record/record.dart';
 
+import '../../helpers/notification_helper.dart';
+
 class ChatController extends GetxController {
   final auth = Supabase.instance.client.auth;
   final db = Supabase.instance.client;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   final isLoading = false.obs;
   final isSending = false.obs;
@@ -18,9 +25,14 @@ class ChatController extends GetxController {
   final profileController = Get.put(ProfileController());
 
   RxString selectedImagePath = ''.obs;
+  final record = AudioRecorder();
+  RxString currentChatRoomId = ''.obs;
+
+  String path = '';
+  String url = '';
 
   // تسجيل الصوت
-  final Record record = Record(); // تهيئة مسجل الصوت
+  // final Record record = Record(); // تهيئة مسجل الصوت
   final isRecording = false.obs; // حالة التسجيل (يشغل/متوقف)
   RxString selectedAudioPath = ''.obs; // مسار ملف الصوت المسجل
 
@@ -132,42 +144,97 @@ class ChatController extends GetxController {
     isSending.value = false;
   }
 
-  Future<void> startRecording() async {
-    bool hasPermission = await record.hasPermission();
-    if (hasPermission) {
+  start_record() async {
+    final location = await getApplicationDocumentsDirectory();
+    String fileName = '${DateTime.now().millisecondsSinceEpoch}.m4a';
+    path = '${location.path}/$fileName';
+
+    if (await record.hasPermission()) {
       await record.start(
-        encoder: AudioEncoder.aacLc,
-        bitRate: 128000,
-        samplingRate: 44100,
+        RecordConfig(),
+        path: path,
       );
       isRecording.value = true;
+      print('🎤 بدء التسجيل: $path');
     } else {
-      Get.snackbar('خطأ', 'لم يتم منح صلاحية الميكروفون');
+      print('❌ لا يوجد صلاحية للتسجيل');
     }
   }
 
-  /// إيقاف التسجيل وحفظ المسار
-  Future<void> stopRecording() async {
-    final path = await record.stop();
+  stop_record() async {
+    String? finalPath = await record.stop();
     isRecording.value = false;
-    if (path != null) {
-      selectedAudioPath.value = path;
-      print("تم تسجيل الصوت: $path");
+
+    if (finalPath != null) {
+      selectedAudioPath.value = finalPath;
+      print('🛑 توقف التسجيل: $finalPath');
+      await upload_record(); // ارفع التسجيل بعد التوقف
+    } else {
+      print('❌ لم يتم حفظ الملف الصوتي');
     }
   }
 
-  /// حذف رسالة
-  Future<void> deleteMessage(String messageId) async {
+  upload_record() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final file = File(selectedAudioPath.value);
+      final fileName = selectedAudioPath.value.split('/').last;
+
+      final fileBytes = await file.readAsBytes();
+
+      await supabase.storage.from('avatars').uploadBinary(
+            'audioUrl/$fileName',
+            fileBytes,
+            fileOptions: const FileOptions(
+              contentType: 'audio/m4a',
+            ),
+          );
+
+      final publicUrl =
+          supabase.storage.from('avatars').getPublicUrl('audioUrl/$fileName');
+
+      url = publicUrl;
+      print('✅ تم رفع الملف الصوتي: $url');
+
+      // تشغيل الصوت مباشرة بعد رفعه
+      // await playAudio(url);
+    } catch (e) {
+      print('❌ خطأ أثناء رفع التسجيل: $e');
+    }
+  }
+
+  // Future<void> playAudio(String url) async {
+  //   try {
+  //     await _audioPlayer.setUrl(url);
+  //     _audioPlayer.play();
+  //     print('▶️ بدأ تشغيل الصوت');
+  //   } catch (e) {
+  //     print('❌ خطأ في تشغيل الصوت: $e');
+  //   }
+  // }
+  Future<void> playAudio(String url) async {
+    try {
+      await _audioPlayer.stop(); // 🛑 أوقف الصوت الحالي أولًا
+      await _audioPlayer.setUrl(url);
+      await _audioPlayer.play();
+      print('▶️ بدأ تشغيل الصوت');
+    } catch (e) {
+      print('❌ خطأ في تشغيل الصوت: $e');
+    }
+  }
+
+  Future<void> deleteMessage(String messageId, String targetUserId) async {
     try {
       await db.from('chats').delete().eq('id', messageId);
       print("✅ تم حذف الرسالة بنجاح");
+
+      update();
     } catch (e) {
       print("❌ فشل في حذف الرسالة: $e");
       Get.snackbar("خطأ", "فشل حذف الرسالة");
     }
   }
 
-  /// جلب الرسائل للمحادثة (Stream)
   Stream<List<ChatModel>> getMessages(String targetUserId) {
     final roomId = getRoomId(targetUserId);
 
@@ -176,31 +243,70 @@ class ChatController extends GetxController {
         .stream(primaryKey: ['id'])
         .eq('roomId', roomId)
         .order('timeStamp', ascending: true)
-        .map((data) => data.map((row) => ChatModel.fromJson(row)).toList());
+        .map((data) {
+          print('Stream updated: ${data.length} messages'); // تحقق هنا
+          return data.map((row) => ChatModel.fromJson(row)).toList();
+        });
   }
-  // Future<void> updateTypingStatus(String targetUserId, bool typing) async {
-  //   final roomId = getRoomId(targetUserId);
 
-  //   try {
-  //     await db
-  //         .from('chat_rooms')
-  //         .update({'is_Typing': typing}).eq('id', roomId);
-  //   } catch (e) {
-  //     print("خطأ في تحديث isTyping: $e");
-  //   }
-  // }
+  /// فلترة المستخدمين بحسب الاسم أو البريد أو أي شرط آخر
+  Future<List<UserModel>> filterUsers(String keyword) async {
+    try {
+      final currentUserId = auth.currentUser!.id;
 
-  // Stream<bool> listenToTyping(String targetUserId) {
-  //   final roomId = getRoomId(targetUserId);
+      final response = await db
+          .from('users') // تأكد أن جدول المستخدمين اسمه 'users'
+          .select()
+          .neq('id', currentUserId) // استثناء المستخدم الحالي
+          .ilike('name',
+              '%$keyword%'); // فلترة بالاسم (يمكنك تغييره إلى email مثلاً)
 
-  //   return db
-  //       .from('chat_rooms')
-  //       .stream(primaryKey: ['id'])
-  //       .eq('id', roomId)
-  //       .map((event) {
-  //         if (event.isEmpty) return false;
-  //         final data = event.first;
-  //         return data['is_Typing'] as bool? ?? false;
-  //       });
-  // }
+      final users = (response as List)
+          .map((userData) => UserModel.fromJson(userData))
+          .toList();
+
+      return users;
+    } catch (e) {
+      print('❌ خطأ أثناء فلترة المستخدمين: $e');
+      return [];
+    }
+  }
+
+  void listenToIncomingMessages() {
+    final currentUserId = auth.currentUser!.id;
+
+    db
+        .from('chats')
+        .stream(primaryKey: ['id'])
+        .eq('reciverId', currentUserId)
+        .listen((List<Map<String, dynamic>> data) {
+          if (data.isNotEmpty) {
+            final message = data.last;
+            final sender = message['senderName'] ?? 'مرسل مجهول';
+            final text = message['message'] ?? '';
+            final imageUrl = message['imageUrl'] ?? '';
+            final audioUrl = message['audioUrl'] ?? '';
+            final incomingRoomId = message['roomId'] ?? '';
+
+            // ✅ تحديد عنوان الرسالة حسب نوع المحتوى
+            String messageTitle = '';
+            if (audioUrl.isNotEmpty) {
+              messageTitle = '🎤 أرسل رسالة صوتية';
+            } else if (imageUrl.isNotEmpty) {
+              messageTitle = '📷 أرسل صورة';
+            } else if (text.isNotEmpty) {
+              messageTitle = text;
+            } else {
+              messageTitle = '📩 رسالة جديدة';
+            }
+
+            if (incomingRoomId != currentChatRoomId.value) {
+              showChatSnackbar(
+                senderName: 'المرسل: $sender',
+                messageTitle: messageTitle,
+              );
+            }
+          }
+        });
+  }
 }

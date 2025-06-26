@@ -11,6 +11,7 @@ class ChatBubbel extends StatefulWidget {
   final String status;
   final String imgUrl;
   final String audioUrl;
+  final String senderName;
   final VoidCallback? onDelete;
 
   const ChatBubbel({
@@ -22,6 +23,7 @@ class ChatBubbel extends StatefulWidget {
     required this.status,
     required this.imgUrl,
     required this.audioUrl,
+    required this.senderName,
     this.onDelete,
   });
 
@@ -46,25 +48,19 @@ class _ChatBubbelState extends State<ChatBubbel> {
 
     _stateSub = _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
-        setState(() {
-          _playerState = state;
-        });
+        setState(() => _playerState = state);
       }
     });
 
     _positionSub = _audioPlayer.onPositionChanged.listen((pos) {
       if (mounted) {
-        setState(() {
-          _position = pos;
-        });
+        setState(() => _position = pos);
       }
     });
 
     _durationSub = _audioPlayer.onDurationChanged.listen((dur) {
       if (mounted) {
-        setState(() {
-          _duration = dur;
-        });
+        setState(() => _duration = dur);
       }
     });
   }
@@ -113,93 +109,141 @@ class _ChatBubbelState extends State<ChatBubbel> {
         children: [
           GestureDetector(
             onLongPress: widget.onDelete,
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.75,
-              ),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: bubbleColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(12),
-                  topRight: const Radius.circular(12),
-                  bottomLeft: Radius.circular(widget.isComming ? 0 : 12),
-                  bottomRight: Radius.circular(widget.isComming ? 12 : 0),
+            child: IntrinsicWidth(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.75,
+                  minWidth: 60,
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (hasImage)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        widget.imgUrl,
-                        width: 180,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Text(
-                          'Image not found',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ),
-                  if (hasImage) const SizedBox(height: 8),
-                  if (hasAudio)
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: bubbleColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(12),
+                    topRight: const Radius.circular(12),
+                    bottomLeft: Radius.circular(widget.isComming ? 0 : 12),
+                    bottomRight: Radius.circular(widget.isComming ? 12 : 0),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 🧑‍🦱 Sender Info Row
                     Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          icon: Icon(
-                            _playerState == PlayerState.playing
-                                ? Icons.pause
-                                : Icons.play_arrow,
-                            color: Colors.white,
+                        CircleAvatar(
+                          radius: 10,
+                          backgroundColor:
+                              widget.isComming ? Colors.blueGrey : Colors.white,
+                          child: Text(
+                            widget.senderName.trim().isNotEmpty
+                                ? widget.senderName.characters.first
+                                    .toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: widget.isComming
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
                           ),
-                          onPressed: _togglePlayPause,
                         ),
+                        const SizedBox(width: 6),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              LinearProgressIndicator(
-                                value: (_duration.inMilliseconds == 0)
-                                    ? 0
-                                    : _position.inMilliseconds /
-                                        _duration.inMilliseconds,
-                                backgroundColor: Colors.white24,
-                                color: Colors.white,
-                                minHeight: 4,
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _formatDuration(_position),
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 12),
-                                  ),
-                                  Text(
-                                    _formatDuration(_duration),
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 12),
-                                  ),
-                                ],
-                              )
-                            ],
+                          child: Text(
+                            widget.senderName,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: widget.isComming
+                                  ? Colors.white
+                                  : Colors.white70,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  if (hasText)
-                    Text(
-                      widget.message,
-                      style: TextStyle(color: textColor),
-                    ),
-                ],
+                    const SizedBox(height: 8),
+
+                    if (hasImage)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          widget.imgUrl,
+                          width: 180,
+                          height: 120,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Text(
+                            'Image not found',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ),
+                    if (hasImage)
+                      const SizedBox(
+                        height: 8,
+                      ),
+
+                    if (hasAudio)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              _playerState == PlayerState.playing
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                              color: Colors.white,
+                            ),
+                            onPressed: _togglePlayPause,
+                          ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                LinearProgressIndicator(
+                                  value: (_duration.inMilliseconds == 0)
+                                      ? 0
+                                      : _position.inMilliseconds /
+                                          _duration.inMilliseconds,
+                                  backgroundColor: Colors.white24,
+                                  color: Colors.white,
+                                  minHeight: 4,
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      _formatDuration(_position),
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 12),
+                                    ),
+                                    Text(
+                                      _formatDuration(_duration),
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 12),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (hasAudio) const SizedBox(height: 8),
+
+                    if (hasText)
+                      Text(
+                        widget.message,
+                        style: TextStyle(color: textColor),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

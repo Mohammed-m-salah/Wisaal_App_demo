@@ -5,6 +5,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:wissal_app/controller/contact_controller/contact_controller.dart';
 import 'package:wissal_app/controller/profile_controller/profile_controller.dart';
 import 'package:wissal_app/model/chat_model.dart';
 import 'package:wissal_app/model/user_model.dart';
@@ -23,6 +24,7 @@ class ChatController extends GetxController {
 
   final uuid = Uuid();
   final profileController = Get.put(ProfileController());
+  ContactController contactController = Get.put(ContactController());
 
   RxString selectedImagePath = ''.obs;
   final record = AudioRecorder();
@@ -132,6 +134,7 @@ class ChatController extends GetxController {
         'created_at': now,
         'un_read_message_no': 0,
       });
+      await contactController.saveContact(targetUser);
     } catch (e) {
       print("❌ Error sending message: $e");
       Get.snackbar('خطأ', 'حدث خطأ أثناء إرسال الرسالة');
@@ -203,15 +206,6 @@ class ChatController extends GetxController {
     }
   }
 
-  // Future<void> playAudio(String url) async {
-  //   try {
-  //     await _audioPlayer.setUrl(url);
-  //     _audioPlayer.play();
-  //     print('▶️ بدأ تشغيل الصوت');
-  //   } catch (e) {
-  //     print('❌ خطأ في تشغيل الصوت: $e');
-  //   }
-  // }
   Future<void> playAudio(String url) async {
     try {
       await _audioPlayer.stop(); // 🛑 أوقف الصوت الحالي أولًا
@@ -301,11 +295,26 @@ class ChatController extends GetxController {
             }
 
             if (incomingRoomId != currentChatRoomId.value) {
-              showChatSnackbar(
-                senderName: 'المرسل: $sender',
-                messageTitle: messageTitle,
-              );
+              // showChatSnackbar(
+              //   senderName: 'المرسل: $sender',
+              //   messageTitle: messageTitle,
+              // );
             }
+          }
+        });
+  }
+
+  Stream<UserModel> getStatus(String uid) {
+    return db
+        .from('save_users')
+        .stream(primaryKey: ['id'])
+        .eq('id', uid)
+        .limit(1)
+        .map((event) {
+          if (event.isNotEmpty) {
+            return UserModel.fromJson(event.first);
+          } else {
+            throw Exception("User not found");
           }
         });
   }

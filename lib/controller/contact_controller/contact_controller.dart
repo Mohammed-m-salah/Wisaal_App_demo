@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:wissal_app/model/ChatRoomModel.dart';
@@ -86,5 +87,66 @@ class ContactController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> saveContact(UserModel user) async {
+    try {
+      await db.from('save_users').insert(user.toJson());
+    } catch (error) {
+      if (kDebugMode) {
+        print(" Error while saving contact: $error");
+      }
+    }
+  }
+
+  // Stream<List<UserModel>> getContacts() {
+  //   return db
+  //       .from('save_users')
+  //       .stream(primaryKey: ['id'])
+  //       .order('createdAt', ascending: false)
+  //       .map((data) {
+  //         return data.map((row) => UserModel.fromJson(row)).toList();
+  //       });
+  // }
+  Stream<List<UserModel>> getContacts() {
+    final currentUserId = auth.currentUser!.id;
+
+    return db
+        .from('chats')
+        .stream(primaryKey: ['id'])
+        .order('timeStamp', ascending: false)
+        .map((data) async {
+          final userIds = <String>{};
+
+          for (var message in data) {
+            // نأخذ فقط الرسائل التي يكون المستخدم طرفًا فيها
+            if (message['senderId'] == currentUserId ||
+                message['reciverId'] == currentUserId) {
+              if (message['senderId'] != currentUserId) {
+                userIds.add(message['senderId']);
+              }
+              if (message['reciverId'] != currentUserId) {
+                userIds.add(message['reciverId']);
+              }
+            }
+          }
+
+          // تحميل معلومات المستخدمين الذين تواصلوا معنا
+          final users = await Future.wait(userIds.map((userId) async {
+            final user = await db
+                .from('save_users') // تأكد أنك تجلب من الجدول الصحيح
+                .select()
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (user != null) {
+              return UserModel.fromJson(user);
+            }
+            return null;
+          }));
+
+          return users.whereType<UserModel>().toList();
+        })
+        .asyncExpand((future) => future.asStream());
   }
 }

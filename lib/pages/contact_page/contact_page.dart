@@ -4,6 +4,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:wissal_app/controller/contact_controller/contact_controller.dart';
 import 'package:wissal_app/controller/profile_controller/profile_controller.dart';
 import 'package:wissal_app/pages/Homepage/widgets/chat_tile.dart';
+import 'package:wissal_app/pages/Homepage/widgets/group/new_group/new_group.dart';
 import 'package:wissal_app/pages/chat_page/chat_page.dart';
 import 'package:wissal_app/pages/contact_page/widgets/new_contact_tile.dart';
 
@@ -72,7 +73,9 @@ class _ContactPageState extends State<ContactPage> {
             NewContactTile(
               btnname: 'New Group',
               icon: Icons.group_add,
-              ontap: () {},
+              ontap: () {
+                Get.to(NewGroup());
+              },
             ),
             const SizedBox(height: 10),
             Padding(

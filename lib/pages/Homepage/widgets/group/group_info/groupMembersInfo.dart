@@ -1,24 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
+import 'package:wissal_app/controller/profile_controller/profile_controller.dart';
+import 'package:wissal_app/model/user_model.dart';
 
-class UserInfo extends StatelessWidget {
+class GroupMemberInfo extends StatelessWidget {
   final String profileImage;
   final String userName;
   final String userEmail;
+  final String groupId;
 
-  const UserInfo({
+  const GroupMemberInfo({
     super.key,
     required this.profileImage,
     required this.userName,
     required this.userEmail,
+    required this.groupId,
   });
 
   @override
   Widget build(BuildContext context) {
+    // يفضل استدعاء الـ controller هنا فقط إذا تم تسجيله مسبقًا
+    final ProfileController profileController = Get.find();
+
     return Padding(
       padding: const EdgeInsets.all(10.0),
       child: Container(
-        width: MediaQuery.of(context).size.width,
+        width: double.infinity,
         height: 250,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.primaryContainer,
@@ -26,29 +33,34 @@ class UserInfo extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: const Color(0xffB8DFF2),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.amber,
-                    width: 4,
-                  ),
+            const SizedBox(height: 8),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xffB8DFF2),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.amber,
+                  width: 4,
                 ),
-                child: ClipOval(
-                  child: Image.network(
-                    profileImage.isNotEmpty
-                        ? profileImage
-                        : "https://i.ibb.co/V04vrTtV/blank-profile-picture-973460-1280.png",
-                    fit: BoxFit.cover,
-                  ),
+              ),
+              child: ClipOval(
+                child: Image.network(
+                  profileImage.isNotEmpty
+                      ? profileImage
+                      : "https://i.ibb.co/V04vrTtV/blank-profile-picture-973460-1280.png",
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.network(
+                      "https://i.ibb.co/V04vrTtV/blank-profile-picture-973460-1280.png",
+                      fit: BoxFit.cover,
+                    );
+                  },
                 ),
               ),
             ),
+            const SizedBox(height: 10),
             Text(
               userName,
               style: const TextStyle(
@@ -58,18 +70,25 @@ class UserInfo extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 5),
-            Text(userEmail, style: Theme.of(context).textTheme.labelMedium),
+            Text(
+              userEmail,
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
             const SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.all(15.0),
+              padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      // اجراء الاتصال
+                    },
                     icon: const Icon(Icons.call, color: Colors.green),
-                    label: const Text('Call',
-                        style: TextStyle(color: Colors.green)),
+                    label: const Text(
+                      'Call',
+                      style: TextStyle(color: Colors.green),
+                    ),
                     style: TextButton.styleFrom(
                       backgroundColor:
                           Theme.of(context).colorScheme.onBackground,
@@ -82,10 +101,14 @@ class UserInfo extends StatelessWidget {
                     ),
                   ),
                   TextButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      // اجراء مكالمة فيديو
+                    },
                     icon: const Icon(Icons.video_call, color: Colors.orange),
-                    label: const Text('Video',
-                        style: TextStyle(color: Colors.orange)),
+                    label: const Text(
+                      'Video',
+                      style: TextStyle(color: Colors.orange),
+                    ),
                     style: TextButton.styleFrom(
                       backgroundColor:
                           Theme.of(context).colorScheme.onBackground,
@@ -97,8 +120,24 @@ class UserInfo extends StatelessWidget {
                           horizontal: 16, vertical: 10),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () {},
+                  TextButton.icon(
+                    onPressed: () {
+                      var newMember = UserModel(
+                          email: userEmail,
+                          name: userName,
+                          profileimage: profileImage,
+                          role: 'admin');
+
+                      profileController.addMemberToGroup(groupId, newMember);
+                    },
+                    icon: Icon(
+                      Icons.person_add_alt_1,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    label: const Text(
+                      'Add',
+                      style: TextStyle(color: Colors.blue),
+                    ),
                     style: TextButton.styleFrom(
                       backgroundColor:
                           Theme.of(context).colorScheme.onBackground,
@@ -108,21 +147,6 @@ class UserInfo extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SvgPicture.asset(
-                          'assets/icons/Vector.svg',
-                          color: Theme.of(context).colorScheme.primary,
-                          height: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Call',
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      ],
                     ),
                   ),
                 ],

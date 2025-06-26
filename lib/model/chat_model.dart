@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class ChatModel {
   String? id;
   String? message;
@@ -29,6 +31,32 @@ class ChatModel {
     this.replies,
   });
 
+  /// تحويل نص أو قائمة إلى List<String>
+  static List<String> _parseStringList(dynamic value) {
+    if (value == null) return [];
+    if (value is List) return List<String>.from(value);
+    if (value is String) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is List) return List<String>.from(decoded);
+      } catch (_) {}
+    }
+    return [];
+  }
+
+  /// تحويل نص أو قائمة إلى List<dynamic>
+  static List<dynamic> _parseDynamicList(dynamic value) {
+    if (value == null) return [];
+    if (value is List) return value;
+    if (value is String) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is List) return decoded;
+      } catch (_) {}
+    }
+    return [];
+  }
+
   // From JSON
   factory ChatModel.fromJson(Map<String, dynamic> json) {
     return ChatModel(
@@ -43,14 +71,13 @@ class ChatModel {
       videoUrl: json['videoUrl'],
       audioUrl: json['audioUrl'],
       documentUrl: json['documentUrl'],
-      reactions:
-          json['reactions'] != null ? List<String>.from(json['reactions']) : [],
-      replies: json['replies'] ?? [],
+      reactions: _parseStringList(json['reactions']),
+      replies: _parseDynamicList(json['replies']),
     );
   }
 
   // To JSON
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'message': message,

@@ -18,15 +18,15 @@ class ChatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 10, right: 10, top: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: Container(
-        margin: const EdgeInsets.all(5),
-        width: double.infinity,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.primaryContainer,
           borderRadius: BorderRadius.circular(20),
         ),
         child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           leading: Container(
             width: 60,
             height: 60,
@@ -43,8 +43,11 @@ class ChatTile extends StatelessWidget {
                 width: 60,
                 height: 60,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    Icon(Icons.person),
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.group,
+                  size: 40,
+                  color: Colors.grey,
+                ),
               ),
             ),
           ),
@@ -54,14 +57,17 @@ class ChatTile extends StatelessWidget {
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
             lastChat,
             style: TextStyle(
-              overflow: TextOverflow.ellipsis,
               color: Colors.grey[600],
               fontSize: 14,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           trailing: Text(
             lastTime,

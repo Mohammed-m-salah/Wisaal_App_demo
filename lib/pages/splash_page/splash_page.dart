@@ -23,6 +23,13 @@ class SplashPage extends StatelessWidget {
               width: 150,
               height: 150,
             ),
+            // SizedBox(
+            //   height: 100,
+            // ),
+            // Text(
+            //   'Dev by:Mohammed Majed Salah',
+            //   style: Theme.of(context).textTheme.labelLarge,
+            // )
             // const SizedBox(height: 20),
             // const CircularProgressIndicator(
             //   color: Colors.blue,

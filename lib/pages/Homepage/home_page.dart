@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:wissal_app/controller/chat_controller/chat_controller.dart';
+import 'package:wissal_app/controller/status_controller/status_controller.dart';
 import 'package:wissal_app/pages/Homepage/widgets/call_list_page.dart';
 import 'package:wissal_app/pages/Homepage/widgets/chat_list_page.dart';
-import 'package:wissal_app/pages/Homepage/widgets/groups_list_page.dart';
+import 'package:wissal_app/pages/Homepage/widgets/group/groups_list_page.dart';
 import 'package:wissal_app/helpers/notification_helper.dart';
 
 class HomePage extends StatefulWidget {
@@ -16,6 +17,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ChatController chatController = Get.put(ChatController());
+  final StatusController statusController = Get.put(StatusController());
 
   @override
   void initState() {
@@ -25,7 +27,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // باقي الكود بدون تغيير
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -41,9 +42,7 @@ class _HomePageState extends State<HomePage> {
           elevation: 2,
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           leading: IconButton(
-            onPressed: () {
-              // Open drawer or menu
-            },
+            onPressed: () {},
             icon: SvgPicture.asset(
               'assets/icons/Vector.svg',
               width: 30,

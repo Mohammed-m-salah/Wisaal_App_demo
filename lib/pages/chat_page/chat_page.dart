@@ -9,8 +9,12 @@ import 'package:wissal_app/controller/image_picker/image_picker.dart';
 import 'package:wissal_app/controller/profile_controller/profile_controller.dart';
 import 'package:wissal_app/model/chat_model.dart';
 import 'package:wissal_app/model/user_model.dart';
+import 'package:wissal_app/pages/call_page/Audio_call_page.dart';
 import 'package:wissal_app/pages/chat_page/widget/chat_pubbel.dart';
 import 'package:wissal_app/pages/user_profile/profile_page.dart';
+
+import '../../controller/call_controller/call_controller.dart';
+import '../../controller/status_controller/status_controller.dart';
 
 class ChatPage extends StatefulWidget {
   final UserModel userModel;
@@ -22,6 +26,8 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   late ChatController chatcontroller;
+  late CallController callController;
+  late StatusController statusController;
   late ProfileController profileController;
   late ImagePickerController imagePickerController;
   final TextEditingController messageController = TextEditingController();
@@ -32,14 +38,15 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
 
     chatcontroller = Get.put(ChatController());
+    callController = Get.put(CallController());
+    statusController = Get.put(StatusController());
+
     profileController = Get.put(ProfileController());
     imagePickerController = Get.put(ImagePickerController());
 
-    // تعيين ID غرفة الدردشة بناءً على المستخدم المحدد
     chatcontroller.currentChatRoomId.value =
         chatcontroller.getRoomId(widget.userModel.id!);
 
-    // تحديث حالة الكتابة عند تغير النص في حقل الرسالة
     messageController.addListener(() {
       chatcontroller.isTyping.value = messageController.text.trim().isNotEmpty;
     });
@@ -104,13 +111,44 @@ class _ChatPageState extends State<ChatPage> {
                           fontWeight: FontWeight.bold,
                         ),
                   ),
-                  Text(
-                    "online",
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w400,
-                        ),
-                  ),
+                  StreamBuilder<UserModel>(
+                    stream: chatcontroller
+                        .getStatus(userModel.id!), // ID المستخدم الآخر
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Text(
+                          "جاري التحقق...",
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                        );
+                      }
+
+                      if (!snapshot.hasData || snapshot.hasError) {
+                        return Text(
+                          "غير متصل",
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                        );
+                      }
+
+                      final user = snapshot.data!;
+                      final isOnline = user.status ?? false;
+
+                      return Text(
+                        isOnline ? "online" : "offline",
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: isOnline ? Colors.green : Colors.grey,
+                              fontWeight: FontWeight.w400,
+                            ),
+                      );
+                    },
+                  )
                 ],
               ),
             ],
@@ -118,7 +156,11 @@ class _ChatPageState extends State<ChatPage> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Get.to(AudioCallPage(target: userModel));
+              callController.callAction(
+                  userModel, profileController.currentUser.value);
+            },
             icon: const Icon(Icons.call, color: Colors.white),
           ),
           IconButton(
@@ -160,6 +202,7 @@ class _ChatPageState extends State<ChatPage> {
                       itemBuilder: (context, index) {
                         final message = messages[index];
                         return ChatBubbel(
+                          senderName: message.senderName ?? '',
                           audioUrl: message.audioUrl ?? "",
                           message: message.message ?? '',
                           isComming: message.senderId ==

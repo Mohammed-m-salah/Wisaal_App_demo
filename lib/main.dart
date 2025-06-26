@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'package:wissal_app/config/page_path.dart';
 import 'package:wissal_app/config/thems.dart';
+import 'package:wissal_app/controller/call_controller/call_controller.dart';
 import 'package:wissal_app/pages/splash_page/splash_page.dart';
 import 'package:wissal_app/pages/welcom_page/welcom_page.dart';
 
@@ -60,6 +61,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    CallController callController = Get.put(CallController());
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       theme: lightThem,

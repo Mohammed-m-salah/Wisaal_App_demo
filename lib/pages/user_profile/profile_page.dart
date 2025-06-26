@@ -16,13 +16,13 @@ class UserProfilePage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         title: Text('Back'),
-        actions: [
-          IconButton(
-              onPressed: () {
-                Get.toNamed('/userupdateprofilepage');
-              },
-              icon: Icon(Icons.edit))
-        ],
+        // actions: [
+        //   IconButton(
+        //       onPressed: () {
+        //         Get.toNamed('/userupdateprofilepage');
+        //       },
+        //       icon: Icon(Icons.edit))
+        // ],
       ),
       body: Column(
         children: [
@@ -31,34 +31,34 @@ class UserProfilePage extends StatelessWidget {
               userName: userModel.name ?? "User",
               userEmail: userModel.email ?? ""),
           Spacer(),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextButton(
-              onPressed: () {
-                logoutcontroller.LogOut();
-              },
-              style: TextButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.onBackground,
-                side: const BorderSide(color: Colors.blue),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.logout),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Logout',
-                    style: TextStyle(color: Colors.blue),
-                  ),
-                ],
-              ),
-            ),
-          )
+          // Padding(
+          //   padding: const EdgeInsets.all(8.0),
+          //   child: TextButton(
+          //     onPressed: () {
+          //       logoutcontroller.LogOut();
+          //     },
+          //     style: TextButton.styleFrom(
+          //       backgroundColor: Theme.of(context).colorScheme.onBackground,
+          //       side: const BorderSide(color: Colors.blue),
+          //       shape: RoundedRectangleBorder(
+          //         borderRadius: BorderRadius.circular(8),
+          //       ),
+          //       padding:
+          //           const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          //     ),
+          //     child: Row(
+          //       mainAxisSize: MainAxisSize.min,
+          //       children: [
+          //         Icon(Icons.logout),
+          //         const SizedBox(width: 8),
+          //         const Text(
+          //           'Logout',
+          //           style: TextStyle(color: Colors.blue),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // )
         ],
       ),
     );
